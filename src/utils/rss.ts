@@ -29,6 +29,13 @@ function linkifyUrls(text: string): string {
 }
 
 /**
+ * Strip leading episode number prefix (e.g. "15) ") from title
+ */
+function stripEpisodePrefix(title: string): string {
+  return title.replace(/^\d+\)\s*/, '');
+}
+
+/**
  * Strip HTML tags and decode entities to get plain text
  */
 function stripHtml(html: string): string {
@@ -62,7 +69,7 @@ export async function parseRssFeed(feedUrl: string): Promise<Episode[]> {
     const descriptionPlain = stripHtml(rawDescription);
 
     return {
-      title: item.title || '',
+      title: stripEpisodePrefix(item.title || ''),
       subtitle: item.itunesSubtitle || item.itunes?.subtitle || undefined,
       description,
       descriptionPlain,
