@@ -3,10 +3,15 @@ import Layout from '../../layouts/Layout.astro';
 import { RSS_FEED_URL, ACAST_SHOW_ID } from '../../config';
 import { parseRssFeed } from '../../utils/rss';
 import type { Episode } from '../../utils/rss';
+import { parseTranscriptModules, type TranscriptModule } from '../../utils/transcripts';
 import ListenPlatforms from '../../components/ListenPlatforms.astro';
 
 export async function getStaticPaths() {
   const episodes = await parseRssFeed(RSS_FEED_URL);
+
+  // Load all transcript markdown files keyed by episode number
+  const transcriptFiles = import.meta.glob<TranscriptModule>('../../content/transcripts/*.md', { eager: true });
+  const transcripts = parseTranscriptModules(transcriptFiles);
 
   // Reverse to get oldest first, then assign numbers starting from 0
   const reversedEpisodes = [...episodes].reverse();
@@ -19,6 +24,7 @@ export async function getStaticPaths() {
       totalEpisodes: episodes.length,
       prevEpisode: index > 0 ? reversedEpisodes[index - 1] : null,
       nextEpisode: index < episodes.length - 1 ? reversedEpisodes[index + 1] : null,
+      transcriptHtml: transcripts[index.toString()] ?? null,
     },
   }));
 }
@@ -29,9 +35,10 @@ interface Props {
   totalEpisodes: number;
   prevEpisode: Episode | null;
   nextEpisode: Episode | null;
+  transcriptHtml: string | null;
 }
 
-const { episode, episodeNumber, totalEpisodes, prevEpisode, nextEpisode } = Astro.props;
+const { episode, episodeNumber, totalEpisodes, prevEpisode, nextEpisode, transcriptHtml } = Astro.props;
 
 // Format date in Norwegian
 const date = new Date(episode.pubDate);
@@ -82,6 +89,16 @@ const formattedDate = date.toLocaleDateString('nb-NO', {
     <div class="prose prose-invert prose-pink max-w-none mb-6">
       <div class="text-lg text-gray-300 leading-relaxed" set:html={episode.description} />
     </div>
+
+    <!-- Transcript -->
+    {transcriptHtml && (
+      <details class="mb-6 border border-gray-800 rounded-lg">
+        <summary class="cursor-pointer px-6 py-4 font-semibold text-lg text-white hover:text-pink transition-colors select-none">
+          Transkripsjon
+        </summary>
+        <div class="px-6 pb-6 prose prose-invert prose-pink max-w-none text-gray-300 leading-relaxed" set:html={transcriptHtml} />
+      </details>
+    )}
 
     <!-- Navigation -->
     <nav class="border-t border-gray-800 pt-8 mt-12">
