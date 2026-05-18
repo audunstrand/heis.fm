@@ -19,6 +19,34 @@ PROJECT_DIR = Path(__file__).resolve().parent.parent
 TRANSCRIPTS_DIR = PROJECT_DIR / "src" / "content" / "transcripts"
 DOWNLOADS_DIR = PROJECT_DIR / ".mp3-cache"
 
+# Known number of speakers per episode.
+# Episodes with 2 guests have 4 speakers (Truls + Audun + 2 guests).
+# --speakers flag overrides this for a specific run.
+EPISODE_SPEAKERS: dict[int, int] = {
+    0: 2,   # Velkommen til Heis (bare Truls og Audun)
+    1: 3,   # Torbjørn Larsen
+    2: 3,   # Hans Christian Holte
+    3: 3,   # Christin Gorman
+    4: 3,   # Morten Eikeland
+    5: 3,   # Vidar Moe
+    6: 4,   # Catherine Janson og Kjerstin Wester
+    7: 3,   # Stine Haugseth
+    8: 3,   # Christian Printzell Halvorsen
+    9: 3,   # Nils Brede Moe
+    10: 3,  # Una Aamodt Mathisen
+    11: 4,  # Vilde Opsal og Anders Sveen
+    12: 3,  # Greger Teigre Wedel
+    13: 3,  # Tobias K. Torrissen
+    14: 3,  # Øystein Ulseth
+    15: 3,  # Kari Olrud Moen
+    16: 3,  # Inga Strümke
+    17: 3,  # Jonas Slørdahl Skjærpe
+}
+
+# Default for episodes not in the map (most have 1 guest = 3 speakers)
+DEFAULT_SPEAKERS = 3
+
+
 def parse_episodes(rss_xml: str) -> list[dict]:
     root = ET.fromstring(rss_xml)
     items = list(reversed(root.findall(".//item")))
@@ -103,7 +131,7 @@ def main():
     parser = argparse.ArgumentParser(description="Transcribe heis.fm episodes")
     parser.add_argument("episode", nargs="?", type=int, help="Episode number to transcribe")
     parser.add_argument("--force", action="store_true", help="Re-transcribe even if transcript exists")
-    parser.add_argument("--speakers", type=int, default=3, help="Number of speakers (default: 3)")
+    parser.add_argument("--speakers", type=int, default=None, help="Override number of speakers (default: auto per episode)")
     args = parser.parse_args()
 
     hf_token = os.environ.get("HF_TOKEN", "")
@@ -133,7 +161,9 @@ def main():
         print(f"[{num}/{len(episodes)-1}] Processing episode {num}: {ep['title']}")
 
         mp3_path = download_episode(ep)
-        transcript = transcribe_episode(mp3_path, hf_token, num_speakers=args.speakers)
+        num_speakers = args.speakers if args.speakers is not None else EPISODE_SPEAKERS.get(num, DEFAULT_SPEAKERS)
+        print(f"  Speakers: {num_speakers}")
+        transcript = transcribe_episode(mp3_path, hf_token, num_speakers=num_speakers)
 
         transcript_path.write_text(transcript, encoding="utf-8")
         print(f"  Saved: {transcript_path}")
