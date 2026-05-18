@@ -26,3 +26,8 @@ pnpm-debug.log*
 # test reports
 playwright-report/
 test-results/
+
+# transcription artifacts
+.mp3-cache/
+models/
+.venv/
