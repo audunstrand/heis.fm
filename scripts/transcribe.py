@@ -43,8 +43,6 @@ EPISODE_SPEAKERS: dict[int, int] = {
     17: 3,  # Jonas Slørdahl Skjærpe
 }
 
-# Default for episodes not in the map (most have 1 guest = 3 speakers)
-DEFAULT_SPEAKERS = 3
 
 
 def parse_episodes(rss_xml: str) -> list[dict]:
@@ -161,7 +159,10 @@ def main():
         print(f"[{num}/{len(episodes)-1}] Processing episode {num}: {ep['title']}")
 
         mp3_path = download_episode(ep)
-        num_speakers = args.speakers if args.speakers is not None else EPISODE_SPEAKERS.get(num, DEFAULT_SPEAKERS)
+        num_speakers = args.speakers if args.speakers is not None else EPISODE_SPEAKERS.get(num)
+        if num_speakers is None:
+            print(f"  ERROR: Unknown number of speakers for episode {num}. Add it to EPISODE_SPEAKERS in transcribe.py or use --speakers N")
+            sys.exit(1)
         print(f"  Speakers: {num_speakers}")
         transcript = transcribe_episode(mp3_path, hf_token, num_speakers=num_speakers)
 
