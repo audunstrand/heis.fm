@@ -70,7 +70,7 @@ def download_episode(episode: dict) -> Path:
         return mp3_path
 
     print(f"  Downloading...")
-    resp = requests.get(episode["url"], stream=True)
+    resp = requests.get(episode["url"], stream=True, headers={"User-Agent": "Mozilla/5.0"})
     resp.raise_for_status()
     with open(mp3_path, "wb") as f:
         for chunk in resp.iter_content(chunk_size=8192):
